@@ -1,5 +1,5 @@
-port: "/dev/ttyACM1"
-tag_name: "tag"
+port: "/dev/ttyACM0"
+tag_name: "D12"
 use_network: False
-network: "network0"
+network: "Rm 314"
 verbose: True

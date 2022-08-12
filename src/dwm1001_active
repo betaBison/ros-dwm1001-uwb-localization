@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" 
+"""
     For more info on the documentation go to https://www.decawave.com/sites/default/files/dwm1001-api-guide.pdf
 """
 
@@ -24,16 +24,16 @@ class dwm1001_localizer:
         # Get port and tag name
         self.dwm_port = rospy.get_param('~port')
         self.tag_name = rospy.get_param('~tag_name')
-	self.use_network = rospy.get_param('~use_network', False)
+        self.use_network = rospy.get_param('~use_network', False)
         self.network = rospy.get_param('~network', "default")
         self.verbose = rospy.get_param('~verbose', False)
-        
+
         # Set a ROS rate
         self.rate = rospy.Rate(1)
-        
+
         # Empty dictionary to store topics being published
         self.topics = {}
-        
+
         # Serial port settings
         self.serialPortDWM1001 = serial.Serial(
             port = self.dwm_port,
@@ -42,7 +42,7 @@ class dwm1001_localizer:
             stopbits = serial.STOPBITS_TWO,
             bytesize = serial.SEVENBITS
         )
-    
+
 
     def main(self) :
         """
@@ -76,7 +76,7 @@ class dwm1001_localizer:
 
             while not rospy.is_shutdown():
                 # just read everything from serial port
-                serialReadLine = self.serialPortDWM1001.read_until()
+                serialReadLine = str(self.serialPortDWM1001.read_until())
 
                 try:
                     self.publishTagPositions(serialReadLine)
@@ -97,7 +97,7 @@ class dwm1001_localizer:
             self.serialPortDWM1001.write(DWM1001_API_COMMANDS.RESET)
             self.serialPortDWM1001.write(DWM1001_API_COMMANDS.SINGLE_ENTER)
             self.rate.sleep()
-            serialReadLine = self.serialPortDWM1001.read_until()
+            serialReadLine = str(self.serialPortDWM1001.read_until())
             if "reset" in serialReadLine:
                 rospy.loginfo("succesfully closed ")
                 self.serialPortDWM1001.close()
@@ -118,27 +118,27 @@ class dwm1001_localizer:
             # The number of elements should be 2 + 6*NUMBER_OF_ANCHORS + 5 (TAG POS)
             number_of_anchors = (len(arrayData) - 7)/6
 
-            for i in range(number_of_anchors) :
+            for i in range(int(number_of_anchors)) :
 
                 node_id = arrayData[2+6*i]
                 first_time = False
                 if node_id not in self.topics :
                     first_time = True
                     self.topics[node_id] = rospy.Publisher(
-                        '/dwm1001' + 
-                        "{}".format("/"+self.network if self.use_network else "") + 
-                        '/anchor/' + node_id + 
-                        "/position", 
-                        PoseStamped, 
+                        '/dwm1001' +
+                        "{}".format("/"+self.network if self.use_network else "") +
+                        '/anchor/' + node_id +
+                        "/position",
+                        PoseStamped,
                         queue_size=100
                     )
                     self.topics[node_id+"_dist"] = rospy.Publisher(
-                        '/dwm1001' + 
-                        "{}".format("/"+self.network if self.use_network else "") + 
+                        '/dwm1001' +
+                        "{}".format("/"+self.network if self.use_network else "") +
                         '/tag/' + self.tag_name +
                         '/to/anchor/' + node_id +
-                        "/distance", 
-                        Float64, 
+                        "/distance",
+                        Float64,
                         queue_size=100
                     )
                 try :
@@ -178,7 +178,7 @@ class dwm1001_localizer:
                     first_time = True
                     self.topics[self.tag_name] = rospy.Publisher('/dwm1001/tag/'+self.tag_name+"/position", PoseStamped, queue_size=100)
                 p = PoseStamped()
-                p.header.stamp = rospy.Time.now()  
+                p.header.stamp = rospy.Time.now()
                 p.pose.position.x = float(arrayData[-4])
                 p.pose.position.y = float(arrayData[-3])
                 p.pose.position.z = float(arrayData[-2])
